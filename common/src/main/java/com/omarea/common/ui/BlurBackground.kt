@@ -105,6 +105,9 @@ class BlurBackground(private val activity: Activity) {
             }
 
             bp = blur(bp) //对屏幕截图模糊处理
+            if (bp == null) {
+                return
+            }
             //将模糊处理后的图恢复到原图尺寸并显示出来
             bp = Bitmap.createScaledBitmap(bp, originalW, originalH, false)
             setImageBitmap(bp)

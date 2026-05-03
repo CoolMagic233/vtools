@@ -95,16 +95,33 @@ public class GpuUtils {
                     "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage",
                     "/sys/class/kgsl/kgsl-3d0/gpuload",
 
-                    "/sys/class/devfreq/gpufreq/mali_ondemand/utilisation", // 麒麟
-                    "/sys/kernel/debug/ged/hal/gpu_utilization", // 天玑820（cat /sys/kernel/debug/ged/hal/gpu_utilization | cut -f1 -d ' '）
-                    "/sys/kernel/ged/hal/gpu_utilization", // 天玑1100 1200（cat /sys/kernel/ged/hal/gpu_utilization | cut -f1 -d ' '）
-                    "/sys/module/ged/parameters/gpu_loading" // 天玑820 数值比较好看，但是值经常为0，莫名其妙
+                    "/sys/class/devfreq/gpufreq/mali_ondemand/utilisation", // 麒麟mali_ondemand调度器
+                    "/sys/class/devfreq/gpufreq/simple_ondemand/utilisation", // 麒麟simple_ondemand调度器
+                    "/sys/kernel/debug/ged/hal/gpu_utilization", // 天玑820
+                    "/sys/kernel/ged/hal/gpu_utilization", // 天玑1100 1200
+                    "/sys/module/ged/parameters/gpu_loading", // 天玑820
+
+                    // gpu_scene_aware/utilisation 是DVFS平滑负载指标，值偏低但有总比没有好
+                    "/sys/class/devfreq/gpufreq/gpu_scene_aware/utilisation"
             };
             GPU_LOAD_PATH = "";
             for (String path : paths) {
                 if (RootFile.INSTANCE.fileExists(path)) {
                     GPU_LOAD_PATH = path;
                     break;
+                }
+            }
+            if (GPU_LOAD_PATH.equals("")) {
+                String dynamicPath = KeepShellPublic.INSTANCE.doCmdSync(
+                        "for dir in /sys/class/devfreq/gpufreq/*/; do " +
+                        "if [ -f \"${dir}utilisation\" ]; then " +
+                        "echo \"${dir}utilisation\"; break; " +
+                        "elif [ -f \"${dir}utilization\" ]; then " +
+                        "echo \"${dir}utilization\"; break; " +
+                        "fi; done"
+                ).trim();
+                if (!dynamicPath.isEmpty() && RootFile.INSTANCE.fileExists(dynamicPath)) {
+                    GPU_LOAD_PATH = dynamicPath;
                 }
             }
         }
@@ -114,7 +131,12 @@ public class GpuUtils {
         } else {
             String load = KernelProrp.INSTANCE.getProp(GPU_LOAD_PATH);
             try {
-                return Integer.parseInt(load.replace("%", "").trim().split(" ")[0]);
+                String value = load.replace("%", "").replace("\n", "").trim().split(" ")[0];
+                double parsed = Double.parseDouble(value);
+                if (parsed > 0 && parsed < 1) {
+                    return (int) Math.round(parsed * 100);
+                }
+                return (int) parsed;
             } catch (Exception ex) {
                 return -1;
             }

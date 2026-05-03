@@ -3,7 +3,8 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 28
+    namespace 'com.omarea.common'
+    compileSdkVersion 30
 
     defaultConfig {
         minSdkVersion 21

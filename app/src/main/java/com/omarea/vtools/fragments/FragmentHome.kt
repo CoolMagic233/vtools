@@ -363,9 +363,11 @@ class FragmentHome : androidx.fragment.app.Fragment() {
                 home_battery_temperature.text = "${temperature}°C"
 
                 home_gpu_freq.text = gpuFreq
-                home_gpu_load.text = getString(R.string.home_utilization) + "$gpuLoad%"
                 if (gpuLoad > -1) {
+                    home_gpu_load.text = getString(R.string.home_utilization) + "$gpuLoad%"
                     home_gpu_chat.setData(100.toFloat(), (100 - gpuLoad).toFloat())
+                } else {
+                    home_gpu_load.text = getString(R.string.home_utilization) + "--"
                 }
                 if (loads.containsKey(-1)) {
                     cpu_core_total_load.text = getString(R.string.home_utilization) + loads[-1]!!.toInt().toString() + "%"

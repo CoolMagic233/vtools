@@ -137,7 +137,7 @@ public class FloatMonitorMini(private val mContext: Context) {
 
     private fun updateInfo() {
         pollingPhase += 1
-        pollingPhase %= 4
+        pollingPhase %= 3
 
         if (coreCount < 1) {
             coreCount = cpuFrequencyUtils.coreCount
@@ -178,24 +178,31 @@ public class FloatMonitorMini(private val mContext: Context) {
         }
 
         val fps = fpsUtils.currentFps
-        var batState: String? = null
+        val batState: String
 
-        if (pollingPhase != 0) {
-            // 电池电流
-            val now = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            val nowMA = if (now != null) {
-                (now / globalSPF.getInt(SpfConfig.GLOBAL_SPF_CURRENT_NOW_UNIT, SpfConfig.GLOBAL_SPF_CURRENT_NOW_UNIT_DEFAULT))
-            } else {
-                null
-            }
-            nowMA?.run {
-                if (this > -20000 && this < 20000) {
-                    batState = "" + (if (this > 0) ("+" + this) else this) + "mA"
+        when (pollingPhase) {
+            0 -> {
+                val now = batteryManager?.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+                val nowMA = if (now != null) {
+                    (now / globalSPF.getInt(SpfConfig.GLOBAL_SPF_CURRENT_NOW_UNIT, SpfConfig.GLOBAL_SPF_CURRENT_NOW_UNIT_DEFAULT))
+                } else {
+                    null
                 }
+                batState = nowMA?.let {
+                    if (it > -20000 && it < 20000) {
+                        (if (it > 0) ("+" + it) else it.toString()) + "mA"
+                    } else {
+                        GlobalStatus.updateBatteryTemperature().toInt().toString() + "°C"
+                    }
+                } ?: (GlobalStatus.updateBatteryTemperature().toInt().toString() + "°C")
             }
-        }
-        if (batState == null) {
-            batState = GlobalStatus.updateBatteryTemperature().toString() + "°C"
+            1 -> {
+                batState = GlobalStatus.updateBatteryTemperature().toInt().toString() + "°C"
+            }
+            else -> {
+                val level = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
+                batState = if (level >= 0) "$level%" else GlobalStatus.updateBatteryTemperature().toInt().toString() + "°C"
+            }
         }
 
         myHandler.post {
@@ -206,7 +213,7 @@ public class FloatMonitorMini(private val mContext: Context) {
                 gpuLoadTextView?.text = "--"
             }
 
-            temperatureText!!.setText(batState!!)
+            temperatureText!!.text = batState
             if (fps != null) {
                 fpsText?.text = fps.toString()
             }

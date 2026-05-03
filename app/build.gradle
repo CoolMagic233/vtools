@@ -3,14 +3,15 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
+    namespace 'com.omarea.vtools'
     applicationVariants.all { variant ->
         variant.outputs.all {
             def fileName = "Scene" + "_${defaultConfig.versionName}_${defaultConfig.versionCode}_" + variant.name + ".apk"
             outputFileName = fileName
         }
     }
-    dataBinding {
-        enabled =true
+    buildFeatures {
+        dataBinding = true
     }
     signingConfigs {
         omarea_Signing {
@@ -21,7 +22,6 @@ android {
         }
     }
     compileSdkVersion 30
-    buildToolsVersion '29.0.2'
     defaultConfig {
         resConfigs "zh"
         applicationId "com.omarea.vtools"
@@ -42,14 +42,12 @@ android {
     buildTypes {
         release {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            zipAlignEnabled true
             debuggable false
             jniDebuggable = false
             // signingConfig signingConfigs.omarea_Signing
         }
         release_mini {
             shrinkResources true
-            zipAlignEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             minifyEnabled true
             debuggable false
@@ -75,7 +73,7 @@ android {
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
-            version "3.10.2"
+            version "3.22.1"
         }
     }
     ndkVersion '21.0.6113669'
